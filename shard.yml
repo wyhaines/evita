@@ -1,0 +1,13 @@
+name: evita
+version: 0.1.0
+
+authors:
+  - Kirk Haines <wyhaines@gmail.com>
+
+targets:
+  evita:
+    main: src/evita.cr
+
+crystal: 0.36.1
+
+license: MIT
