@@ -11,3 +11,7 @@ targets:
 crystal: 0.36.1
 
 license: MIT
+
+dependencies:
+  splay_tree_map:
+    github: wyhaines/splay_tree_map.cr
