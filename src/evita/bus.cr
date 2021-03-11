@@ -3,7 +3,7 @@ require "uuid"
 
 module Evita
   class Pipeline(T) < Channel(T)
-    property origin : String = UUID.random.to_s
+    property origin : String = Bus.origin_tag
   end
 
   #####
@@ -11,7 +11,10 @@ module Evita
   # can reply to a message. Those replies will be routed back to the
   # original sender.
   class Bus
-    def self.origin_tag(origin)
+    def self.origin_tag
+      # TODO: This should check the subscriptions to see if there is a UUID tag
+      # already existing with the generated UUID, and generate a new one if there
+      # is (however uncommon that may be).
       UUID.random.to_s
     end
 
@@ -80,15 +83,12 @@ module Evita
       receivers = Hash(Pipeline(Message), Bool).new
       message.tags.each do |tag|
         if @subscriptions.has_key?(tag)
-          pp @subscriptions[tag].keys.inspect
           @subscriptions[tag].each_key do |receiver|
-            puts "*"
             receivers[receiver] = true
           end
         end
       end
 
-      puts receivers.size
       receivers.keys.each do |receiver|
         spawn {
           receiver.send(message)

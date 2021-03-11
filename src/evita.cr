@@ -1,4 +1,5 @@
 require "./evita/*"
+require "benchmark"
 
 module Evita
   class Robot
@@ -23,10 +24,11 @@ class Handler
   def listen
     spawn {
       ppl = @pipeline
-      msg = ppl.receive if !ppl.nil?
-      if !msg.nil?
-        puts "#{msg.body} -- #{@value}"
-        msg.reply(body: "returning #{@value}", parameters: {"value" => @value})
+      loop do
+        msg = ppl.receive if !ppl.nil?
+        if !msg.nil?
+          msg.reply(body: "returning #{@value}", parameters: {"value" => @value})
+        end
       end
     }
   end
@@ -37,7 +39,9 @@ endc = Channel(Nil).new
 e = Evita::Robot.new
 
 h = [] of Handler
-11.times do |x|
+iter = 10
+
+iter.times do |x|
   h << Handler.new(value: (x*x).to_s)
   h[x].subscribe(e.bus, [x.to_s, "all"])
   h[x].listen
@@ -56,22 +60,24 @@ got = me.receive
 puts "<< #{got.body}"
 puts "<< #{got.parameters["value"]}"
 
-  e.bus.send(
-  e.bus.message(
-    body: "What is your value? >>",
-    tags: ["all"],
-    origin: me.origin
-  )
-)
+Benchmark.ips do |bm|
+  bm.report do
+    e.bus.send(
+      e.bus.message(
+        body: "What is your value? >>",
+        tags: ["all"],
+        origin: me.origin
+      )
+    )
 
-s = 0
-10.times do |x|
-  n = me.receive
-  puts "<<(#{x}) -- #{n.parameters["value"]}"
-  s += n.parameters["value"].to_i
+    s = 0
+    iter.times do |x|
+      n = me.receive
+      s += n.parameters["value"].to_i
+    end
+  end
 end
-
-puts "total: #{s}"
+# puts "total: #{s}"
 
 spawn { endc.send(nil) }
 endc.receive
