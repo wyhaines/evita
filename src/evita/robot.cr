@@ -5,6 +5,7 @@ module Evita
     def initialize
       @bus = Bus.new
       @handlers = Array(Handler).new
+      @adapters = Array(Adapter).new
     end
 
     def send(message : Message)
@@ -24,7 +25,7 @@ module Evita
 
     def register_handler(handler : Handler)
       pipeline = @bus.subscribe(
-        tags: ["handler", handler.class.name]
+        tags: ["handler", "handler:#{handler.class.name}"]
       )
       @handlers << handler
 
@@ -32,6 +33,12 @@ module Evita
     end
 
     def register_adapter(adapter : Adapter)
+      pipeline = @bus.subscribe(
+        tags: ["adapter", "adapter:#{handler.class.name}"]
+      )
+      @adapters << adapter
+
+      pipeline
     end
   end
 end

@@ -11,7 +11,11 @@ module Evita
         super
 
         @user = User.new(name: "Shell User")
-        @pipeline = @bot.subscribe(tags: ["user: #{user}"])
+        @pipeline = @bot.register_adapter(self)
+      end
+
+      def origin
+        @pipeline.is_a?(Pipeline) ? @pipeline.origin : nil
       end
 
       def roster(room)
@@ -19,6 +23,16 @@ module Evita
       end
 
       def run
+        @output_proc = spawn(name: "receive_output for #{self.class.name}:#{@user.name}") {receive_output}
+        @input_proc = spawn(name: "receive_input for #{self.class.name}:#{@user.name}") {receive_input}
+      end
+
+      def receive_output
+        loop do
+          msg = @pipeline.receive
+          send_output(msg.body)
+        end
+      ensure
       end
 
       def send_output(strings : Array(String), _target : String? = nil)
@@ -35,7 +49,7 @@ module Evita
         Readline.readline("#{bot.name} > ")
       end
 
-      def run_loop
+      def receive_input
         loop do
           input = read_input
           if input.nil?
@@ -45,9 +59,8 @@ module Evita
           break if exit_words.include?(input)
           @bot.send(
             @bot.message(
-              body: "What is your value? >>",
-              tags: ["5"],
-              origin: me.origin
+              body: input,
+              origin: origin
             )
           )
         end
