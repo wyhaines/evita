@@ -2,17 +2,18 @@ require "splay_tree_map"
 require "uuid"
 
 module Evita
-  class Pipeline(T) < Channel(T)
-    property origin : String = UUID.random.to_s
-  end
 
   #####
   # A Bus sends messages to interested subscribers. Those subscribers
   # can reply to a message. Those replies will be routed back to the
   # original sender.
   class Bus
-    def self.origin_tag(origin)
-      UUID.random.to_s
+    # Generate a random UUID that does not already exist in the subscriptions.
+    def self.origin_tag
+      loop do
+        id = UUID.random.to_s
+        break if !@subscriptions.has_key?(id)
+      end
     end
 
     def initialize
@@ -24,12 +25,15 @@ module Evita
       handle_pipeline
     end
 
+    # The pipeline into the bus exists primarily for message object to have
+    # a queue that can be used to submit replies that are intended to go back
+    # into the bus. This method creates a fiber that listens on the pipeline
+    # and sends anything that it receives.
     private def handle_pipeline
       spawn(name: "Pipeline loop") {
         loop do
           msg = @pipeline.receive
-          # This probably needs a way to protect against
-          # messages just looping around.
+          # This probably needs a way to protect against message loops.
           send(message: msg)
         end
       }
@@ -77,18 +81,19 @@ module Evita
 
     # Send a message to the subscribers
     def send(message : Message)
+      # It's quite possible for tag combinations to target the same
+      # recipient via multiple tags. In those cases the system should
+      # only send a given message one time, so the following code builds
+      # a unique list of recipients.
       receivers = Hash(Pipeline(Message), Bool).new
       message.tags.each do |tag|
         if @subscriptions.has_key?(tag)
-          pp @subscriptions[tag].keys.inspect
           @subscriptions[tag].each_key do |receiver|
-            puts "*"
             receivers[receiver] = true
           end
         end
       end
 
-      puts receivers.size
       receivers.keys.each do |receiver|
         spawn {
           receiver.send(message)
