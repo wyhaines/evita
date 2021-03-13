@@ -1,4 +1,5 @@
 require "./bus"
+
 module Evita
   class Robot
     getter bus : Bus

@@ -1,12 +1,12 @@
 require "splay_tree_map"
 require "uuid"
+
 module Evita
   #####
   # A Bus sends messages to interested subscribers. Those subscribers
   # can reply to a message. Those replies will be routed back to the
   # original sender.
   class Bus
-
     def initialize
       @subscriptions = SplayTreeMap(String, Hash(Pipeline(Message), Bool)).new do |h, k|
         h[k] = Hash(Pipeline(Message), Bool).new

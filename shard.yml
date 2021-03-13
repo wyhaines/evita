@@ -17,3 +17,5 @@ dependencies:
     github: wyhaines/splay_tree_map.cr
   readline:
     github: crystal-lang/crystal-readline
+  openai:
+    github: sferik/openai-crystal

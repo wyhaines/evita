@@ -3,7 +3,6 @@ require "readline"
 module Evita
   module Adapters
     class Shell < Adapter
-
       EXIT_WORDS = %w(exit quit)
 
       def initialize(@bot)
@@ -26,7 +25,7 @@ module Evita
       def run
         join
         @output_proc = spawn(name: "receive_output for #{self.class}:#{@user.name}") { receive_output }
-        @input_proc = spawn(name: "receive_input for #{self.class}:#{ @user.name}") { receive_input }
+        @input_proc = spawn(name: "receive_input for #{self.class}:#{@user.name}") { receive_input }
       end
 
       def join; end
@@ -50,7 +49,7 @@ module Evita
       def send_output(strings : Array(String), target : String? = nil)
         strings.reject!(&.empty?)
 
-        puts strings
+        puts strings.join("\n")
       end
 
       def shut_down
@@ -71,13 +70,14 @@ module Evita
             break
           end
           exit if EXIT_WORDS.includes?(input)
-          
+
           b = @bot
           if !b.nil?
             b.send(
               b.message(
                 body: input,
-                origin: origin
+                origin: origin,
+                parameters: {"from" => @user.name}
               )
             )
           end
