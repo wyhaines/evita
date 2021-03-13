@@ -1,8 +1,12 @@
 module Evita
   struct User
-    getter id : UInt64
+    getter id : Int32
     getter name : String
 
     def initialize(@name, @id = 1); end
+
+    def to_s
+      "#{@name}:#{@id}"
+    end
   end
 end

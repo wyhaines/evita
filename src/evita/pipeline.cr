@@ -2,6 +2,11 @@ module Evita
   # A pipeline is just a channel with an extra origin tag that can
   # be used to uniquely identify this particular pipeline.
   class Pipeline(T) < Channel(T)
-    property origin : String = Bus.origin_tag
+    property origin : String
+
+    def initialize(capacity = 0, origin : String = UUID.random.to_s)
+      @origin = origin
+      super(capacity)
+    end
   end
-end  
+end

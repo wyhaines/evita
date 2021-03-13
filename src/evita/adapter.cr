@@ -1,24 +1,18 @@
+require "./pipeline"
+
 module Evita
   class Adapter
-
-    abstract def service
-    abstract def join
-    abstract def part
-    abstract def roster
-    abstract def run
-    abstract def send_output
-    abstract def receive_input
-    abstract def receive_output
-    abstract def set_topic
-    abstract def shut_down
-
-    getter bot : Robot
-
-    def initialize(@bot)
-      @output_proc : Fiber? = nil
-      @input_proc : Fiber? = nil
+    @pipeline : Pipeline(Message) = Pipeline(Message).new
+    @output_proc : Fiber?
+    @input_proc : Fiber?
+    #@bot : Robot
+    @user : User = User.new(name: "Generic User")
+    def initialize(@bot : Robot)
+      @output_proc = nil
+      @input_proc = nil
+      @pipeline = @bot.register_adapter(self)
     end
-    
+
     def running?
       if input_running? && output_running?
         true
@@ -36,5 +30,18 @@ module Evita
     def output_running?
       @output_proc.running?
     end
+
+    def service; end
+    def join; end
+    def part; end
+    def roster(room); end
+    def run; end
+    def send_output(strings : Array(String), target : String? = nil); end
+    def receive_input; end
+    def receive_output; end
+    def set_topic(topic : String); end
+    def shut_down; end
   end
 end
+
+require "./adapters/*"

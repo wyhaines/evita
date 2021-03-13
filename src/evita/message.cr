@@ -25,7 +25,7 @@ module Evita
     def reply(message : Message)
       reply_impl(message)
     end
-    
+
     def reply(
       body = "",
       parameters : Hash(String, String) = Hash(String, String).new,
@@ -56,6 +56,5 @@ module Evita
         )
       )
     end
-
   end
 end

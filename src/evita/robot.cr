@@ -1,6 +1,8 @@
+require "./bus"
 module Evita
   class Robot
     getter bus : Bus
+    property name : String = "Evita"
 
     def initialize
       @bus = Bus.new
@@ -21,9 +23,15 @@ module Evita
       origin : String? = nil,
       parameters : Hash(String, String) = Hash(String, String).new
     )
+      @bus.message(
+        body: body,
+        origin: origin,
+        parameters: parameters,
+        tags: ["handler"]
+      )
     end
 
-    def register_handler(handler : Handler)
+    def register_handler(handler : Handler) : Pipeline(Message)
       pipeline = @bus.subscribe(
         tags: ["handler", "handler:#{handler.class.name}"]
       )
@@ -32,9 +40,9 @@ module Evita
       pipeline
     end
 
-    def register_adapter(adapter : Adapter)
+    def register_adapter(adapter : Adapter) : Pipeline(Message)
       pipeline = @bus.subscribe(
-        tags: ["adapter", "adapter:#{handler.class.name}"]
+        tags: ["adapter", "adapter:#{adapter.class.name}"]
       )
       @adapters << adapter
 

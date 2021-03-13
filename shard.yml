@@ -15,3 +15,5 @@ license: MIT
 dependencies:
   splay_tree_map:
     github: wyhaines/splay_tree_map.cr
+  readline:
+    github: crystal-lang/crystal-readline

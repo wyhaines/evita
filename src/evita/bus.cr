@@ -1,28 +1,31 @@
 require "splay_tree_map"
 require "uuid"
-
 module Evita
-
   #####
   # A Bus sends messages to interested subscribers. Those subscribers
   # can reply to a message. Those replies will be routed back to the
   # original sender.
   class Bus
-    # Generate a random UUID that does not already exist in the subscriptions.
-    def self.origin_tag
-      loop do
-        id = UUID.random.to_s
-        break if !@subscriptions.has_key?(id)
-      end
-    end
 
     def initialize
       @subscriptions = SplayTreeMap(String, Hash(Pipeline(Message), Bool)).new do |h, k|
         h[k] = Hash(Pipeline(Message), Bool).new
       end
       @subscribers = Hash(Pipeline(Message), Array(String)).new
-      @pipeline = Pipeline(Message).new(20)
+      @pipeline = Pipeline(Message).new(capacity: 20, origin: origin_tag)
       handle_pipeline
+    end
+
+    # Generate a random UUID that does not already exist in the subscriptions.
+    def origin_tag
+      loop do
+        id = UUID.random.to_s
+        break id if !has_subscription?(id)
+      end
+    end
+
+    def has_subscription?(key)
+      @subscriptions.has_key?(key)
     end
 
     # The pipeline into the bus exists primarily for message object to have
@@ -41,7 +44,7 @@ module Evita
 
     # Subscribe a new message consumer to the Bus
     def subscribe(tags = [] of String)
-      pipeline = Pipeline(Message).new(10)
+      pipeline = Pipeline(Message).new(capacity: 10, origin: origin_tag)
       tags << pipeline.origin
       tags.each do |tag|
         @subscriptions[tag][pipeline] = true
@@ -65,6 +68,34 @@ module Evita
     # Generate a message for this bus.
     def message(
       body : String,
+      origin : String? = nil,
+      tags : Array(String) = [] of String,
+      parameters : Hash(String, String) = Hash(String, String).new
+    )
+      message_impl(
+        body: [body],
+        origin: origin,
+        tags: tags,
+        parameters: parameters
+      )
+    end
+
+    def message(
+      body : Array(String),
+      origin : String? = nil,
+      tags : Array(String) = [] of String,
+      parameters : Hash(String, String) = Hash(String, String).new
+    )
+      message_impl(
+        body: body,
+        origin: origin,
+        tags: tags,
+        parameters: parameters
+      )
+    end
+
+    def message_impl(
+      body : Array(String),
       origin : String? = nil,
       tags : Array(String) = [] of String,
       parameters : Hash(String, String) = Hash(String, String).new

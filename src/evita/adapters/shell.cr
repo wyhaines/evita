@@ -3,19 +3,20 @@ require "readline"
 module Evita
   module Adapters
     class Shell < Adapter
-      property user : String
 
       EXIT_WORDS = %w(exit quit)
 
       def initialize(@bot)
         super
-
         @user = User.new(name: "Shell User")
-        @pipeline = @bot.register_adapter(self)
       end
 
       def origin
         @pipeline.is_a?(Pipeline) ? @pipeline.origin : nil
+      end
+
+      def service
+        "shell"
       end
 
       def roster(room)
@@ -23,8 +24,19 @@ module Evita
       end
 
       def run
-        @output_proc = spawn(name: "receive_output for #{self.class.name}:#{@user.name}") {receive_output}
-        @input_proc = spawn(name: "receive_input for #{self.class.name}:#{@user.name}") {receive_input}
+        join
+        @output_proc = spawn(name: "receive_output for #{self.class}:#{@user.name}") { receive_output }
+        @input_proc = spawn(name: "receive_input for #{self.class}:#{ @user.name}") { receive_input }
+      end
+
+      def join; end
+
+      def part; end
+
+      def set_topic(topic : String)
+      end
+
+      def shut_down
       end
 
       def receive_output
@@ -35,7 +47,7 @@ module Evita
       ensure
       end
 
-      def send_output(strings : Array(String), _target : String? = nil)
+      def send_output(strings : Array(String), target : String? = nil)
         strings.reject!(&.empty?)
 
         puts strings
@@ -46,7 +58,9 @@ module Evita
       end
 
       def read_input
-        Readline.readline("#{bot.name} > ")
+        b = @bot
+        return if b.nil?
+        Readline.readline("#{b.name} > ")
       end
 
       def receive_input
@@ -56,16 +70,20 @@ module Evita
             puts
             break
           end
-          break if exit_words.include?(input)
-          @bot.send(
-            @bot.message(
-              body: input,
-              origin: origin
+          exit if EXIT_WORDS.includes?(input)
+          
+          b = @bot
+          if !b.nil?
+            b.send(
+              b.message(
+                body: input,
+                origin: origin
+              )
             )
-          )
+          end
+          Fiber.yield
         end
       end
-
     end
   end
 end
