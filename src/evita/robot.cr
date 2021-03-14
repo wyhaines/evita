@@ -1,14 +1,30 @@
+require "db"
+require "sqlite3"
 require "./bus"
+require "./command_line"
+require "./database"
+require "debug"
 
 module Evita
+  @@bot : Robot
+  class_property! bot : Robot
+
   class Robot
+    @db : DB::Database
+    @config : Config
+
     getter bus : Bus
+    getter db : DB::Database
     property name : String = "Evita"
 
     def initialize
+      @config = CommandLine.parse_options
+      debug!(@config)
+      @db = Database.setup(@config)
       @bus = Bus.new
       @handlers = Array(Handler).new
       @adapters = Array(Adapter).new
+      Evita.bot = self
     end
 
     def send(message : Message)

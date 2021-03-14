@@ -9,6 +9,7 @@ end
 module Evita
   module Handlers
     class GPT3 < Handler
+      PREAMBLE       = "The following is a conversation with an assistant named Evita. The assistant is helpful, creative, and witty.\n\n"
       SEGMENT_OF_DAY = ->do
         t = Time.local
 
@@ -42,7 +43,7 @@ module Evita
       def initialize(@bot)
         super
 
-        @openai = OpenAI::Client.new(api_key: ENV.fetch("OPENAI_API_KEY"), default_engine: "curie")
+        @openai = OpenAI::Client.new(api_key: ENV.fetch("OPENAI_API_KEY"), default_engine: "davinci")
         @conversations = Hash(String, Array(String)).new do |h, k|
           h[k] = [conversation_starter]
         end
@@ -74,17 +75,41 @@ module Evita
           loop do
             begin
               msg = ppl.receive if !ppl.nil?
+
               if !msg.nil?
                 counter += 1
                 from = msg.parameters["from"]? || "anonymous"
                 conversation = @conversations[from]
                 conversation << "#{from}: #{msg.body.join("\n")}"
                 conversation.shift if conversation.size > 10
-                completion = @openai.completions(prompt: conversation.join("\n"), max_tokens: 21 + rand(20))
-                reply = prune_reply(
-                  completion.choices.first.text.strip
+                completion = @openai.completions(
+                  prompt: PREAMBLE + conversation.join("\n"),
+                  max_tokens: 21 + rand(20),
+                  temperature: 0.9,
+                  stop: "#{from}:"
                 )
+
+                reply = ""
+                limit = 3
+                loop do
+                  reply = prune_reply(
+                    completion.choices.first.text.strip
+                  )
+                  cleanliness = @openai.filter(conversation.join("\n") + reply)
+                  break if cleanliness.choices.first.text.to_i < 2
+                  limit -= 1
+                  if limit == 0
+                    reply = "#{@bot.name}: That's inappropriate for me to say. Maybe we should change the subject?"
+                    break
+                  end
+                end
+
+                if reply.strip.empty?
+                  puts completion.inspect
+                end
+
                 conversation << reply
+                puts "sending -> #{reply}"
                 msg.reply(body: reply)
               end
             rescue e : Exception

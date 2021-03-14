@@ -3,10 +3,10 @@ require "benchmark"
 
 endc = Channel(Nil).new
 
-e = Evita::Robot.new
+bot = Evita::Robot.new
 
-shell_adapter = Evita::Adapters::Shell.new(e)
-echo_handler = Evita::Handlers::GPT3.new(e)
+shell_adapter = Evita::Adapters::Shell.new(bot)
+echo_handler = Evita::Handlers::GPT3.new(bot)
 
 shell_adapter.run
 echo_handler.run

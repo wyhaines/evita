@@ -7,7 +7,7 @@ module Evita
 
       def initialize(@bot)
         super
-        @user = User.new(name: "Shell User")
+        @user = User.new(adapter: self, name: "Shell User")
       end
 
       def origin
@@ -15,6 +15,10 @@ module Evita
       end
 
       def service
+        "shell"
+      end
+
+      def namespace
         "shell"
       end
 

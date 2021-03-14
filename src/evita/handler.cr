@@ -4,6 +4,7 @@ module Evita
   abstract class Handler
     @pipeline : Evita::Pipeline(Evita::Message)?
     @listener_proc : Fiber? = nil
+    getter bot : Evita::Robot
 
     def initialize(@bot : Robot)
       @pipeline = @bot.register_handler(self)

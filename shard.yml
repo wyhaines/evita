@@ -18,4 +18,9 @@ dependencies:
   readline:
     github: crystal-lang/crystal-readline
   openai:
-    github: sferik/openai-crystal
+    github: wyhaines/openai-crystal
+    branch: main
+  sqlite3:
+    github: crystal-lang/crystal-sqlite3
+  debug:
+    github: Sija/debug.cr
