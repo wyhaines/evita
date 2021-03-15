@@ -1,4 +1,4 @@
-![Main CI](https://github.com/wyhaines/evita/actions/workflows/ci/badge.svg)
+![Main CI](https://github.com/wyhaines/evita/workflows/Git-Index%20CI/badge.svg)
 
 # evita
 
