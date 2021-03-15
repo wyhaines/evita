@@ -22,7 +22,7 @@ jobs:
       run: |
         apt-get install -y sqlite3 libsqlite3-dev
     - name: Install Readline
-      run: apt install libreadline-dev
+      run: apt install -y libreadline-dev
     - name: Install dependencies
       run: shards install
     - name: Run tests
