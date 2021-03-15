@@ -26,4 +26,4 @@ jobs:
     - name: Install dependencies
       run: shards install
     - name: Run tests
-      run: crystal spec -p -s -t --error-trace
+      run: crystal spec -s -t --error-trace
