@@ -1,4 +1,4 @@
-name: Git-Index CI
+name: Evita CI
 
 on:
   push:
