@@ -16,6 +16,7 @@ module Evita
     getter bus : Bus
     getter db : DB::Database
     property name : String = "Evita"
+    getter config : Config
 
     def initialize
       @config = CommandLine.parse_options

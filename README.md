@@ -1,3 +1,5 @@
+https://github.com/wyhaines/evita/actions/workflows/ci/badge.svg
+
 # evita
 
 The vision for Evita is a chat bot framework, written in Crystal, that draws inspiration from work done on the Ruby Lita framework, while seeking to keep things as simple as possible.

@@ -40,32 +40,32 @@ module Evita
       @conversations : Hash(String, Array(String))
       @openai : OpenAI::Client
 
+      def self.conversation_starter
+        "#{Evita.bot.name}: My name is #{Evita.bot.name}. #{CONVERSATION_STARTERS.pick_one.call}"
+      end
+
+      def self.prune_reply(reply)
+        remove_extra_conversation(
+          trim_unfinished_sentence(
+            reply.split("\n", 2).first
+          ))
+      end
+
+      def self.trim_unfinished_sentence(reply)
+        reply.sub(/[^\.!\?]*$/, "")
+      end
+
+      def self.remove_extra_conversation(reply)
+        "#{Evita.bot.name}: #{reply.sub(/^[\w\s]*:\s*(.*?)$/m, "\\1")}"
+      end
+
       def initialize(@bot)
         super
 
         @openai = OpenAI::Client.new(api_key: ENV.fetch("OPENAI_API_KEY"), default_engine: "davinci")
         @conversations = Hash(String, Array(String)).new do |h, k|
-          h[k] = [conversation_starter]
+          h[k] = [GPT3.conversation_starter]
         end
-      end
-
-      def conversation_starter
-        "#{@bot.name}: My name is #{@bot.name}. #{CONVERSATION_STARTERS.pick_one.call}"
-      end
-
-      def prune_reply(reply)
-        remove_extra_conversation(
-          cut_unfinished_sentence(
-            reply.split("\n", 2).first
-          ))
-      end
-
-      def cut_unfinished_sentence(reply)
-        reply.sub(/[^\.!\?]*$/, "")
-      end
-
-      def remove_extra_conversation(reply)
-        "#{@bot.name}: #{reply.sub(/^[\w\s]*:\s*(.*?)$/m, "\\1")}"
       end
 
       def listen
@@ -92,7 +92,7 @@ module Evita
                 reply = ""
                 limit = 3
                 loop do
-                  reply = prune_reply(
+                  reply = GPT3.prune_reply(
                     completion.choices.first.text.strip
                   )
                   cleanliness = @openai.filter(conversation.join("\n") + reply)

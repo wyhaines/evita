@@ -15,5 +15,7 @@ module Evita
     # being executed.
     @[YAML::Field(key: "database")]
     property database : String = "sqlite3://./evita.db"
+
+    property mode : String = "test"
   end
 end

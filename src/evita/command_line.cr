@@ -14,17 +14,24 @@ module Evita
         database: sqlite3://./evita.db
         EYAML
       )
+
+      mode = "test"
+
       OptionParser.new do |opts|
         opts.banner = "#{VERSION_STRING}\nUsage: evita [options]"
         opts.separator ""
-        opts.on("-c", "--config CONFFILE", "The configuration file to read.") do |conf|
-          config = Config.from_yaml(File.read(conf))
-        end
-        opts.on("-n", "--name [NAME]", "The port to receive connections on.") do |port|
-          config.name = name
-        end
-        opts.on("-d", "--database [CONNECT_STRING]", "The connection string to use to connect to the robot's database.") do |str|
-          config.database = str
+        opts.on("run", "Run the bot.") do
+          mode = "run"
+
+          opts.on("-c", "--config CONFFILE", "The configuration file to read.") do |conf|
+            config = Config.from_yaml(File.read(conf))
+          end
+          opts.on("-n", "--name [NAME]", "The port to receive connections on.") do |port|
+            config.name = name
+          end
+          opts.on("-d", "--database [CONNECT_STRING]", "The connection string to use to connect to the robot's database.") do |str|
+            config.database = str
+          end
         end
         opts.on("--help", "Show this help") do
           puts opts
@@ -40,6 +47,8 @@ module Evita
           exit(1)
         end
       end.parse
+
+      config.mode = mode
 
       config
     end
