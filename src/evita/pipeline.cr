@@ -4,7 +4,7 @@ module Evita
   class Pipeline(T) < Channel(T)
     property origin : String
 
-    def initialize(capacity = 0, origin : String = UUID.random.to_s)
+    def initialize(capacity = 0, origin : String = CSUUID.new.to_s)
       @origin = origin
       super(capacity)
     end

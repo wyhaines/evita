@@ -2,7 +2,7 @@ require "./pipeline"
 
 module Evita
   class Adapter
-    @pipeline : Pipeline(Message) = Pipeline(Message).new
+    @pipeline : Pipeline(Message) = Pipeline(Message).new(100)
     @output_proc : Fiber?
     @input_proc : Fiber?
     # @bot : Robot

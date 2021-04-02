@@ -53,10 +53,10 @@ module Evita
       DISCOVER = /#{SEARCH}#{TERM_OR_DEFINITION}(?:#{REGEXP_CAPTURE}|#{CAPTURE})\W*$/.freeze
       DELETE   = /#{FORGET}#{CAPTURE}\W*$/.freeze
 
-      def listen
+      def handle(msg)
       end
 
-      def self.evaluate(payload)
+      def evaluate(payload)
         if can_handle(payload[:message].body)
           [900_000, :via_memory]
         else

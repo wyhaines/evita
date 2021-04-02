@@ -1,3 +1,5 @@
+require "csuuid"
+
 module Evita
   struct Message
     getter body : Array(String)
@@ -5,6 +7,8 @@ module Evita
     getter parameters : Hash(String, String)
     getter origin : String?
     getter pipeline : Pipeline(Message)
+    getter uuid : CSUUID
+    property evaluated : Bool = false
 
     def initialize(
       @pipeline,
@@ -12,14 +16,13 @@ module Evita
       @body = [""],
       @tags = [] of String,
       @parameters = Hash(String, String).new,
-      @origin = nil
+      @origin = nil,
+      @uuid = CSUUID.new
     )
     end
 
     private def reply_impl(message : Message)
-      spawn {
-        @pipeline.send(message)
-      }
+      @pipeline.send(message)
     end
 
     def reply(message : Message)
@@ -54,6 +57,21 @@ module Evita
           tags: tags,
           origin: origin
         )
+      )
+    end
+
+    def send_evaluation(relevance, certainty, receiver, uuid = @uuid)
+      reply_impl(
+        @bus.message(
+          body: "",
+          tags: ["evaluate()"],
+          parameters: {
+            "relevance" => relevance.to_s,
+            "certainty" => certainty.to_s,
+            "receiver"  => receiver,
+            "uuid"      => uuid.to_s,
+          },
+          origin: origin)
       )
     end
   end

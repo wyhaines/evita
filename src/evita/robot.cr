@@ -3,7 +3,6 @@ require "sqlite3"
 require "./bus"
 require "./command_line"
 require "./database"
-require "debug"
 
 module Evita
   @@bot : Robot
@@ -20,12 +19,15 @@ module Evita
 
     def initialize
       @config = CommandLine.parse_options
-      debug!(@config)
       @db = Database.setup(@config)
       @bus = Bus.new
       @handlers = Array(Handler).new
       @adapters = Array(Adapter).new
       Evita.bot = self
+    end
+
+    def health_check
+      # TODO: Placeholder, but should probably do something someday.
     end
 
     def send(message : Message)

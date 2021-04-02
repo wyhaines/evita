@@ -8,7 +8,7 @@ targets:
   evita:
     main: src/evita.cr
 
-crystal: 0.36.1
+crystal: 1.0.0
 
 license: MIT
 
@@ -16,11 +16,19 @@ dependencies:
   splay_tree_map:
     github: wyhaines/splay_tree_map.cr
   readline:
-    github: crystal-lang/crystal-readline
+    github: wyhaines/crystal-readline
+    branch: master
+#    github: crystal-lang/crystal-readline
   openai:
     github: wyhaines/openai-crystal
     branch: main
   sqlite3:
     github: crystal-lang/crystal-sqlite3
-  debug:
-    github: Sija/debug.cr
+  csuuid:
+    github: wyhaines/csuuid.cr
+    branch: main
+
+development_dependencies:
+  ameba:
+    github: crystal-ameba/ameba
+    version: ~> 0.14

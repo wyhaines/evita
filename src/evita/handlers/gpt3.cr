@@ -68,56 +68,50 @@ module Evita
         end
       end
 
-      def listen
-        spawn {
-          counter = 0
-          ppl = @pipeline
-          loop do
-            begin
-              msg = ppl.receive if !ppl.nil?
+      def evaluate(msg)
+        ppl = @pipeline
 
-              if !msg.nil?
-                counter += 1
-                from = msg.parameters["from"]? || "anonymous"
-                conversation = @conversations[from]
-                conversation << "#{from}: #{msg.body.join("\n")}"
-                conversation.shift if conversation.size > 10
-                completion = @openai.completions(
-                  prompt: PREAMBLE + conversation.join("\n"),
-                  max_tokens: 21 + rand(20),
-                  temperature: 0.9,
-                  stop: "#{from}:"
-                )
+        msg.send_evaluation(
+          relevance: 0,
+          certainty: 1000000,
+          receiver: ppl.origin
+        ) if ppl
+      end
 
-                reply = ""
-                limit = 3
-                loop do
-                  reply = GPT3.prune_reply(
-                    completion.choices.first.text.strip
-                  )
-                  cleanliness = @openai.filter(conversation.join("\n") + reply)
-                  break if cleanliness.choices.first.text.to_i < 2
-                  limit -= 1
-                  if limit == 0
-                    reply = "#{@bot.name}: That's inappropriate for me to say. Maybe we should change the subject?"
-                    break
-                  end
-                end
+      def handle(msg)
+        from = msg.parameters["from"]? || "anonymous"
+        conversation = @conversations[from]
+        conversation << "#{from}: #{msg.body.join("\n")}"
+        conversation.shift if conversation.size > 10
+        completion = @openai.completions(
+          prompt: PREAMBLE + conversation.join("\n"),
+          max_tokens: 21 + rand(20),
+          temperature: 0.9,
+          stop: "#{from}:"
+        )
 
-                if reply.strip.empty?
-                  puts completion.inspect
-                end
-
-                conversation << reply
-                puts "sending -> #{reply}"
-                msg.reply(body: reply)
-              end
-            rescue e : Exception
-              puts "boom"
-              puts e
-            end
+        reply = ""
+        limit = 3
+        loop do
+          reply = GPT3.prune_reply(
+            completion.choices.first.text.strip
+          )
+          cleanliness = @openai.filter(conversation.join("\n") + reply)
+          break if cleanliness.choices.first.text.to_i < 2
+          limit -= 1
+          if limit == 0
+            reply = "#{@bot.name}: That's inappropriate for me to say. Maybe we should change the subject?"
+            break
           end
-        }
+        end
+
+        if reply.strip.empty?
+          puts completion.inspect
+        end
+
+        conversation << reply
+        puts "sending -> #{reply}"
+        msg.reply(body: reply)
       end
     end
   end

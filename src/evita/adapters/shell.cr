@@ -28,8 +28,16 @@ module Evita
 
       def run
         join
-        @output_proc = spawn(name: "receive_output for #{self.class}:#{@user.name}") { receive_output }
-        @input_proc = spawn(name: "receive_input for #{self.class}:#{@user.name}") { receive_input }
+        @output_proc = spawn(name: "receive_output for #{self.class}:#{@user.name}") do
+          receive_output
+        rescue e : Exception
+          puts "output_proc: #{e}"
+        end
+        @input_proc = spawn(name: "receive_input for #{self.class}:#{@user.name}") do
+          receive_input
+        rescue e : Exception
+          puts "input_proc: #{e} == #{e.backtrace.join("\n")}"
+        end
       end
 
       def join; end
@@ -47,7 +55,10 @@ module Evita
           msg = @pipeline.receive
           send_output(msg.body)
         end
+      rescue e : Exception
+        puts "BOOM! #{e} -- #{e.backtrace.join}"
       ensure
+        puts "exit receive output"
       end
 
       def send_output(strings : Array(String), target : String? = nil)
@@ -68,24 +79,37 @@ module Evita
 
       def receive_input
         loop do
-          input = read_input
-          if input.nil?
-            puts
-            break
-          end
-          exit if EXIT_WORDS.includes?(input)
+          begin
+            input = read_input
+            if input.nil?
+              puts
+              break
+            end
+            if EXIT_WORDS.includes?(input)
+              puts("Got an exit word(#{input}); exiting")
+              exit
+            end
+            b = @bot
 
-          b = @bot
-          if !b.nil?
-            b.send(
-              b.message(
+            if !b.nil?
+              msg = b.message(
                 body: input,
                 origin: origin,
                 parameters: {"from" => @user.name}
               )
-            )
+
+              b.health_check
+
+              b.send(
+                msg
+              )
+            else
+              puts "Bot isn't connected."
+            end
+            # Fiber.yield
+          rescue e : Exception
+            puts e
           end
-          Fiber.yield
         end
       end
     end

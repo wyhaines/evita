@@ -1,5 +1,6 @@
 require "splay_tree_map"
 require "uuid"
+require "./bus/*"
 
 module Evita
   #####
@@ -8,12 +9,14 @@ module Evita
   # original sender.
   class Bus
     def initialize
+      @pending_evaluation = SplayTreeMap(String, Evaluation).new
       @subscriptions = SplayTreeMap(String, Hash(Pipeline(Message), Bool)).new do |h, k|
         h[k] = Hash(Pipeline(Message), Bool).new
       end
       @subscribers = Hash(Pipeline(Message), Array(String)).new
       @pipeline = Pipeline(Message).new(capacity: 20, origin: origin_tag)
       handle_pipeline
+      handle_evaluations
     end
 
     # Generate a random UUID that does not already exist in the subscriptions.
@@ -33,13 +36,48 @@ module Evita
     # into the bus. This method creates a fiber that listens on the pipeline
     # and sends anything that it receives.
     private def handle_pipeline
-      spawn(name: "Pipeline loop") {
+      spawn(name: "Pipeline loop") do
         loop do
-          msg = @pipeline.receive
-          # This probably needs a way to protect against message loops.
-          send(message: msg)
+          begin
+            msg = @pipeline.receive
+            # This probably needs a way to protect against message loops.
+            send(message: msg)
+          rescue e : Exception
+            puts "pipeline handler"
+            puts(e)
+            puts e.backtrace.join("\n")
+            exit
+          end
         end
-      }
+      end
+    end
+
+    private def handle_evaluations
+      pipeline = subscribe(tags: ["evaluate()"])
+      spawn(name: "Evaluation Handler") do
+        loop do
+          begin
+            msg = pipeline.receive
+            evaluation = @pending_evaluation[msg.parameters["uuid"]]
+            evaluation.set(
+              msg.parameters["receiver"],
+              msg.parameters["relevance"],
+              msg.parameters["certainty"]
+            )
+            if evaluation.finished?
+              winner = evaluation.winner
+              evaluation.message.evaluated = true
+              winner.send evaluation.message if winner
+              @pending_evaluation.delete msg.parameters["uuid"]
+            end
+          rescue e : Exception
+            puts "evalation handler"
+            puts e
+            puts e.backtrace.join("\n")
+            exit
+          end
+        end
+      end
     end
 
     # Subscribe a new message consumer to the Bus
@@ -50,7 +88,6 @@ module Evita
         @subscriptions[tag][pipeline] = true
       end
       @subscribers[pipeline] = tags
-
       pipeline
     end
 
@@ -125,10 +162,15 @@ module Evita
         end
       end
 
+      # This needs to do a two-step send. It needs to find out
+      # which handlers are willing to handle the message, through
+      # calling the handlers evaluate# methods, and then it needs
+      # to pick one to actually send to.
+
+      @pending_evaluation[message.uuid.to_s] = Evaluation.new(message, receivers.keys)
+
       receivers.keys.each do |receiver|
-        spawn {
-          receiver.send(message)
-        }
+        receiver.send(message)
       end
     end
   end
