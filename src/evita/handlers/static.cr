@@ -12,8 +12,9 @@ module Evita
     # handle the message at all.
     class Static < Handler
       Data = {
-        marco: "polo",
-        ping:  "pong",
+        marco:       "polo",
+        ping:        "pong",
+        futurestack: "Level up your observability game at FutureStack, a free virtual event May 25-27! https://bit.ly/futurestack-twitch",
       }
 
       def evaluate(msg)

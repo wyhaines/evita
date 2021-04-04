@@ -110,7 +110,6 @@ module Evita
         end
 
         conversation << reply
-        puts "sending -> #{reply}"
         msg.reply(body: reply)
       end
     end

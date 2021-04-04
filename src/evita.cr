@@ -6,11 +6,13 @@ bot = Evita::Robot.new
 if bot.config.mode == "run"
   endc = Channel(Nil).new
 
-  shell_adapter = Evita::Adapters::Shell.new(bot)
+  #shell_adapter = Evita::Adapters::Shell.new(bot)
+  irc_adapter = Evita::Adapters::Irc.new(bot)
   echo_handler = Evita::Handlers::GPT3.new(bot)
   static_handler = Evita::Handlers::Static.new(bot)
 
-  shell_adapter.run
+  #shell_adapter.run
+  irc_adapter.run
   echo_handler.run
   static_handler.run
   spawn(name: "exit handler") {
