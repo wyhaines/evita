@@ -11,14 +11,25 @@ module Evita
   class Robot
     @db : DB::Database
     @config : Config
+    @@config : Evita::Config = CommandLine.parse_options
 
     getter bus : Bus
     getter db : DB::Database
     property name : String = "Evita"
     getter config : Config
 
+    def self.set_config(config)
+      @@config = config
+    end
+
+    def self.config
+      @@config
+    end
+
     def initialize
-      @config = CommandLine.parse_options
+      @config = @@config
+      puts @config.inspect
+      Robot.set_config(@config)
       @db = Database.setup(@config)
       @bus = Bus.new
       @handlers = Array(Handler).new

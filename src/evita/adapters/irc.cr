@@ -1,13 +1,21 @@
-require "crirc"
+require "simple_irc"
 
 module Evita
   module Adapters
     class Irc < Adapter
-      getter client : Crirc::Network::Client?
+      getter client : SimpleIrc::Client
+
+      PREAMBLE_MARKER = /You are in a maze of twisty passages, all alike./
 
       def initialize(@bot)
         super
-        @client = nil
+        @discard_preamble = true
+        @client = SimpleIrc::Client.new(
+          token: "",
+          nick: "",
+          channel: "",
+          do_connect: false
+        )
         @user = User.new(adapter: self, name: "Shell User")
       end
 
@@ -41,61 +49,18 @@ module Evita
         end
       end
 
-      def receive_input
-        loop do
-          begin
-            message = @client.gets
-            next if message.nil?
-
-            b = @bot
-            if !b.nil?
-              msg = b.message(
-                body: message,
-                origin: origin,
-                parameters: {"from" => @user.name}
-              )
-
-              b.send(
-                msg
-              )
-            end
-          rescue IO::TimeoutError
-            puts "The IRC connection timed out..."
-          end
-        end
-      end
-
-      def send_output(strings : Array(String), target : String? = nil)
-        strings.reject!(&.empty?)
-
-        @client.puts strings.join("\n")
-      end
-
-      def receive_output
-        loop do
-          msg = @pipeline.receive
-          send_output(msg.body)
-        end
-      rescue e : Exception
-        puts "BOOM! #{e} -- #{e.backtrace.join}"
-      ensure
-        puts "exit receive output"
-      end
-
       def join
-        @client = Crirc::Network::Client.new(
-          ip: "irc.chat.twitch.tv",
-          pass: ENV["TWITCH_CHAT_TOKEN"],
-          port: 6697.to_u16,
+        @client = SimpleIrc::Client.new(
+          host: "irc.chat.twitch.tv",
+          token: ENV["TWITCH_EVITA_TOKEN"],
+          port: 6697,
           ssl: true,
-          nick: "Evita",
-          read_timeout: 300_u16,
+          channel: ENV["TWITCH_EVITA_CHANNEL"],
+          nick: ENV["TWITCH_EVITA_NICK"]? || "Evita"
         )
-        client = @client
-        if client
-          client.connect
-          client.join Crirc::Protocol::Chan.new("wyhaines")
-        end
+        @client.authenticate
+        @client.join
+        @client.privmsg("Hi. I am #{@bot.name}.")
       end
 
       def part; end
@@ -104,6 +69,7 @@ module Evita
       end
 
       def shut_down
+        @client.quit
       end
 
       def receive_output
@@ -120,49 +86,77 @@ module Evita
       def send_output(strings : Array(String), target : String? = nil)
         strings.reject!(&.empty?)
 
-        puts strings.join("\n")
+        @client.privmsg strings.join("\n")
       end
 
       def shut_down
         puts
       end
 
-      def read_input
+      def read_input : String?
         b = @bot
         return if b.nil?
-        Readline.readline("#{b.name} > ")
+        raw_input = @client.gets
+        if @discard_preamble
+          @discard_preamble = false if raw_input =~ PREAMBLE_MARKER
+          nil
+        else
+          raw_input
+        end
+      end
+
+      def ping?(input)
+        input =~ /PING\s+:tmi.twitch.tv/
+      end
+
+      def pong
+        @client.direct "PONG :tmi.twitch.tv"
+      end
+
+      def normalize_bot_name(txt)
+        txt.gsub(/\@?(#{@bot.name}|#{ENV["TWITCH_EVITA_NICK"]})\s*:?\s*/i, @bot.name)
       end
 
       def receive_input
         loop do
           begin
-            input = read_input
-            if input.nil?
-              puts
-              break
-            end
-            if EXIT_WORDS.includes?(input)
-              puts("Got an exit word(#{input}); exiting")
-              exit
-            end
-            b = @bot
+            NRApp.app.non_web_transaction("input") do |txn|
+              input = ""
+              txn.segment("Read Input") do |segment|
+                input = read_input
+              end
+              if input.nil?
+                puts "Nil input"
+              elsif ping?(input)
+                puts input
+                pong
+              else
+                b = @bot
 
-            if !b.nil?
-              msg = b.message(
-                body: input,
-                origin: origin,
-                parameters: {"from" => @user.name}
-              )
+                matches = input.not_nil!.match(/^:(?<username>.+)!.+ PRIVMSG #\w+ :(?<txt>.+)$/)
 
-              b.health_check
+                if !b.nil? && matches
+                  username = matches["username"]
+                  txt = normalize_bot_name(matches["txt"])
 
-              b.send(
-                msg
-              )
-            else
-              puts "Bot isn't connected."
+                  puts input
+                  msg = b.message(
+                    body: txt,
+                    origin: origin,
+                    parameters: {"from" => username}
+                  )
+
+                  b.health_check
+
+                  b.send(
+                    msg
+                  )
+                else
+                  puts input
+                end
+              end
+              # Fiber.yield
             end
-            # Fiber.yield
           rescue e : Exception
             puts e
           end

@@ -23,7 +23,7 @@ module Evita
         opts.on("run", "Run the bot.") do
           mode = "run"
 
-          opts.on("-c", "--config CONFFILE", "The configuration file to read.") do |conf|
+          opts.on("-c", "--config [CONFFILE]", "The configuration file to read.") do |conf|
             config = Config.from_yaml(File.read(conf))
           end
           opts.on("-n", "--name [NAME]", "The port to receive connections on.") do |port|

@@ -71,7 +71,7 @@ module Evita
               @pending_evaluation.delete msg.parameters["uuid"]
             end
           rescue e : Exception
-            puts "evalation handler"
+            puts "evaluation handler"
             puts e
             puts e.backtrace.join("\n")
             exit

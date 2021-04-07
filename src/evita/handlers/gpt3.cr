@@ -56,7 +56,7 @@ module Evita
       end
 
       def self.remove_extra_conversation(reply)
-        "#{Evita.bot.name}: #{reply.sub(/^[\w\s]*:\s*(.*?)$/m, "\\1")}"
+        reply.sub(/^[\w\s]*:\s*(.*?)$/m, "\\1")
       end
 
       def initialize(@bot)
@@ -83,9 +83,10 @@ module Evita
         conversation = @conversations[from]
         conversation << "#{from}: #{msg.body.join("\n")}"
         conversation.shift if conversation.size > 10
+        puts conversation.inspect
         completion = @openai.completions(
           prompt: PREAMBLE + conversation.join("\n"),
-          max_tokens: 21 + rand(20),
+          max_tokens: 54 + rand(20),
           temperature: 0.9,
           stop: "#{from}:"
         )
@@ -96,11 +97,12 @@ module Evita
           reply = GPT3.prune_reply(
             completion.choices.first.text.strip
           )
+          next if reply.strip.empty?
           cleanliness = @openai.filter(conversation.join("\n") + reply)
           break if cleanliness.choices.first.text.to_i < 2
           limit -= 1
           if limit == 0
-            reply = "#{@bot.name}: That's inappropriate for me to say. Maybe we should change the subject?"
+            reply = "That's inappropriate for me to say. Maybe we should change the subject?"
             break
           end
         end

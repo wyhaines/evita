@@ -11,11 +11,35 @@ module Evita
     # If it does not have a match, though, it will decline to
     # handle the message at all.
     class Static < Handler
+      class Config
+        include YAML::Serializable
+        include YAML::Serializable::Unmapped
+
+        @[YAML::Field(key: "asset_path", emit_null: true)]
+        getter asset_path : String? = nil
+      end
+
+      # I don't think that I actually want to take this approach of compiling things in directly.
+      #
+      # macro from_proc(path)
+      #   {% code = read_file?(path) %}
+      #   ->() { {{ code.id }} }
+      # end
+
+      # macro from_content(path)
+      #   {% content = read_file?(path) %}
+      #   {{ content.stringify }}
+      # end
+
+      # macro dbg(path)
+      #   puts path
+      # end
+
       Data = {
-        marco:       "polo",
-        ping:        "pong",
-        futurestack: "Level up your observability game at FutureStack, a free virtual event May 25-27! https://bit.ly/futurestack-twitch",
-      }
+        "marco"       => "polo",
+        "ping"        => "pong",
+        "futurestack" => "Level up your observability game at FutureStack, a free virtual event May 25-27! https://bit.ly/futurestack-twitch",
+      })
 
       def evaluate(msg)
         ppl = @pipeline
@@ -39,6 +63,10 @@ module Evita
         cmd && Data.has_key?(cmd)
       end
 
+      def authorized_to_handle(msg)
+        msg.parameters["from"]? == "wyhaines"
+      end
+
       def command(msg)
         match = /^\s*!\s*(\w+)/.match(msg.body.join)
         match && match[1]
@@ -46,9 +74,21 @@ module Evita
 
       def handle(msg)
         cmd = command(msg)
-        reply = Data[cmd]? if cmd
+        if cmd
+          match = Data[cmd]?
+          if match && match.is_a?(Proc)
+            reply = match.call.to_s
+          else
+            reply = Data[cmd].as(String)
+          end
+        end
         msg.reply(body: reply) if reply
       end
     end
+  end
+
+  class Config
+    @[YAML::Field(key: "static", emit_null: true)]
+    getter static : Handlers::Static::Config?
   end
 end
