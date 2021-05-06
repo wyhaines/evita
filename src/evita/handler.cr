@@ -17,11 +17,27 @@ module Evita
       @listener_proc = listen
     end
 
-    # This should spawn a fiber that will listen to the message
-    # bus for messages intended for the handler.
+    # This should spawn a fiber that will listen to the message bus for
+    # messages intended for the handler.
 
     abstract def evaluate(msg)
     abstract def handle(msg)
+
+    def will_handle?(msg)
+      can_handle?(msg) && authorized_to_handle?(msg)
+    end
+
+    # This should probably be overridden in subclasses so that they can make
+    # informed decisions about whether or not they can handle the message.
+    def can_handle?(msg)
+      true
+    end
+
+    # Override this if only certain users should be authorized to have access
+    # to the given handler.
+    def authorized_to_handle?(msg)
+      true
+    end
 
     def listen
       spawn(name: "Generic Handler Listen Loop") do

@@ -27,6 +27,9 @@ dependencies:
   csuuid:
     github: wyhaines/csuuid.cr
     branch: main
+  twitch_event_sub:
+    github: wyhaines/TwitchEventSub.cr
+    branch: main
 
 development_dependencies:
   ameba:

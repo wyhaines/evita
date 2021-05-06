@@ -9,7 +9,7 @@ end
 module Evita
   module Handlers
     class GPT3 < Handler
-      PREAMBLE       = "The following is a conversation with an assistant named Evita. The assistant is helpful, creative, and witty.\n\n"
+      PREAMBLE       = "You are an AI assistant named EVITA_NAME for the \"#wyhaines\" Twitch channel. You are polite, and happy, and helpful. You are an expert in computer science, software engineering, the Ruby programming language, and the Crystal programming language. You will greet people with a friendly greeting the first time that they follow or subscribe to the channel, and will be truthful when answering questions about software engineering or programming.\n\n"
       SEGMENT_OF_DAY = ->do
         t = Time.local
 
@@ -41,7 +41,7 @@ module Evita
       @openai : OpenAI::Client
 
       def self.conversation_starter
-        "#{Evita.bot.name}: My name is #{Evita.bot.name}. #{CONVERSATION_STARTERS.pick_one.call}"
+        "#{Evita.bot.name}: #{CONVERSATION_STARTERS.pick_one.call}"
       end
 
       def self.prune_reply(reply)
@@ -71,29 +71,55 @@ module Evita
       def evaluate(msg)
         ppl = @pipeline
 
-        msg.send_evaluation(
-          relevance: 0,
-          certainty: 1000000,
-          receiver: ppl.origin
-        ) if ppl
+        if will_handle?(msg)
+          msg.send_evaluation(
+            relevance: 0,
+            certainty: 1000000,
+            receiver: ppl.origin
+          ) if ppl
+        else
+          msg.send_evaluation(
+            relevance: -1000000,
+            certainty: -1000000,
+            receiver: ppl.origin
+          ) if ppl
+        end
+      end
+
+      def will_handle?(msg)
+        can_handle?(msg) && authorized_to_handle?(msg)
+      end
+
+      def authorized_to_handle?(msg)
+        msg.parameters["from"]? == "wyhaines"
+      end
+
+      def can_handle?(msg)
+        match_direct = msg.body.join("\n") =~ /^\s*@?(evita|evita_bot|#{Evita.bot.name})\b/i
+        puts match_direct.inspect
+        match_direct
       end
 
       def handle(msg)
         from = msg.parameters["from"]? || "anonymous"
         conversation = @conversations[from]
         conversation << "#{from}: #{msg.body.join("\n")}"
-        conversation.shift if conversation.size > 10
+        conversation.shift if conversation.size > 5
         puts conversation.inspect
-        completion = @openai.completions(
-          prompt: PREAMBLE + conversation.join("\n"),
-          max_tokens: 54 + rand(20),
-          temperature: 0.9,
-          stop: "#{from}:"
-        )
-
         reply = ""
         limit = 3
+        completion = uninitialized OpenAI::Completion
         loop do
+          begin
+            completion = @openai.completions(
+              prompt: PREAMBLE.gsub(/EVITA_NAME/, Evita.bot.name) + conversation.join("\n"),
+              max_tokens: 54 + rand(20),
+              temperature: 0.9,
+              stop: "#{from}:"
+            )
+          rescue
+            next
+          end
           reply = GPT3.prune_reply(
             completion.choices.first.text.strip
           )
@@ -111,8 +137,12 @@ module Evita
           puts completion.inspect
         end
 
-        conversation << reply
-        msg.reply(body: reply)
+        if reply =~ /@#{from}\b/
+          conversation << "#{Evita.bot.name}: #{reply}"
+        else
+          conversation << "#{Evita.bot.name}: @#{from}: #{reply}"
+        end
+        msg.reply(body: "@#{from}: #{reply}")
       end
     end
   end

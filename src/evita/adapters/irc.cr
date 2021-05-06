@@ -120,43 +120,43 @@ module Evita
       def receive_input
         loop do
           begin
-            NRApp.app.non_web_transaction("input") do |txn|
-              input = ""
-              txn.segment("Read Input") do |segment|
-                input = read_input
-              end
-              if input.nil?
-                puts "Nil input"
-              elsif ping?(input)
+            # NRApp.app.non_web_transaction("input") do |txn|
+            input = ""
+            # txn.segment("Read Input") do |segment|
+            input = read_input
+            # end
+            if input.nil?
+              puts "Nil input"
+            elsif ping?(input)
+              puts input
+              pong
+            else
+              b = @bot
+
+              matches = input.not_nil!.match(/^:(?<username>.+)!.+ PRIVMSG #\w+ :(?<txt>.+)$/)
+
+              if !b.nil? && matches
+                username = matches["username"]
+                txt = normalize_bot_name(matches["txt"])
+
                 puts input
-                pong
+                msg = b.message(
+                  body: txt,
+                  origin: origin,
+                  parameters: {"from" => username}
+                )
+
+                b.health_check
+
+                b.send(
+                  msg
+                )
               else
-                b = @bot
-
-                matches = input.not_nil!.match(/^:(?<username>.+)!.+ PRIVMSG #\w+ :(?<txt>.+)$/)
-
-                if !b.nil? && matches
-                  username = matches["username"]
-                  txt = normalize_bot_name(matches["txt"])
-
-                  puts input
-                  msg = b.message(
-                    body: txt,
-                    origin: origin,
-                    parameters: {"from" => username}
-                  )
-
-                  b.health_check
-
-                  b.send(
-                    msg
-                  )
-                else
-                  puts input
-                end
+                puts input
               end
-              # Fiber.yield
             end
+            # Fiber.yield
+            # end
           rescue e : Exception
             puts e
           end

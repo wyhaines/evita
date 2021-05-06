@@ -1,48 +1,22 @@
+require "twitch_event_sub"
+
 module Evita
   module Handlers
-    # This handler will volunteer to handle a message if it
-    # has a specific response to the message payload that makes
-    # sense. i.e. if a message goes out to be handled, with
-    # content of "!futurestack", and this handler has been
-    # given static content for that message, then it will bid
-    # very high in order to answer the message because it has
-    # absolute certainty that it has an appropriate response to
-    # the message.
-    # If it does not have a match, though, it will decline to
-    # handle the message at all.
-    class Static < Handler
+    # Twitch supports an EventSub API that is used to subscribe
+    # to a variety of notification types. This handler lets the
+    # chatbot subscribe to events via configuration or via commands
+    # and to respond to those events.
+    #
+    # Event responses can be a static text response, a templated
+    # response, a response powered with GPT-3, or the result of
+    # running some external code.
+    class TwitchEventSub < Handler
       class Config
         include YAML::Serializable
         include YAML::Serializable::Unmapped
 
         @[YAML::Field(key: "asset_path", emit_null: true)]
         getter asset_path : String? = nil
-      end
-
-      # I don't think that I actually want to take this approach of compiling things in directly.
-      #
-      # macro from_proc(path)
-      #   {% code = read_file?(path) %}
-      #   ->() { {{ code.id }} }
-      # end
-
-      # macro from_content(path)
-      #   {% content = read_file?(path) %}
-      #   {{ content.stringify }}
-      # end
-
-      # macro dbg(path)
-      #   puts path
-      # end
-
-      Data = {
-        "marco"       => "polo",
-        "ping"        => "pong",
-        "futurestack" => "Level up your observability game at FutureStack, a free virtual event May 25-27! https://bit.ly/futurestack-twitch",
-      }
-
-      def asset_path
-        Robot.config.static && Robot.config.static.not_nil!.asset_path
       end
 
       def evaluate(msg)
@@ -85,7 +59,6 @@ module Evita
 
       def command(msg)
         match = /^\s*!\s*(\w+)/.match(msg.body.join)
-        puts "#{msg.body.join} -- #{match.inspect}"
         match && match[1]
       end
 
@@ -103,8 +76,4 @@ module Evita
     end
   end
 
-  class Config
-    @[YAML::Field(key: "static", emit_null: true)]
-    getter static : Handlers::Static::Config?
-  end
 end
