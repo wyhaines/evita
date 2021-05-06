@@ -10,6 +10,11 @@ module Evita
     # Event responses can be a static text response, a templated
     # response, a response powered with GPT-3, or the result of
     # running some external code.
+    #
+    # Interactive commands are:
+    # !twitch:subscribe
+    # !twitch:list_subscriptions
+    # !twitch:unsubscribe
     class TwitchEventSub < Handler
       class Config
         include YAML::Serializable
