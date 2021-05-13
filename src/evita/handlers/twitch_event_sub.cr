@@ -1,4 +1,5 @@
 require "twitch_event_sub"
+require "./twitch_event_sub/twitch_event_sub_driver"
 
 module Evita
   module Handlers
@@ -15,13 +16,22 @@ module Evita
     # !twitch:subscribe
     # !twitch:list_subscriptions
     # !twitch:unsubscribe
-    class TwitchEventSub < Handler
+    class TwitchEventSub < Evita::Handler
       class Config
         include YAML::Serializable
         include YAML::Serializable::Unmapped
 
         @[YAML::Field(key: "asset_path", emit_null: true)]
         getter asset_path : String? = nil
+      end
+
+      def initialize(@bot : Robot)
+        super
+        @subscriptions = ::TwitchEventSub::Subscriptions.new(
+          client_id: ENV["TWITCH_CLIENT_ID"],
+          authorization: ENV["TWITCH_APP_ACCESS_TOKEN"],
+          handler: Evita::TwitchEventSubDriver
+        )
       end
 
       def evaluate(msg)
@@ -50,8 +60,8 @@ module Evita
       end
 
       def can_handle?(msg)
-        cmd = command(msg)
-        cmd && (Data.has_key?(cmd) || asset_exists?(cmd))
+        cmd, subscription, arg = command(msg)
+        TwitchEventSubDriver.twitch_subscription_handler_commands.includes?(cmd)
       end
 
       def asset_exists?(cmd)
@@ -63,22 +73,51 @@ module Evita
       end
 
       def command(msg)
-        match = /^\s*!\s*(\w+)/.match(msg.body.join)
-        match && match[1]
+        match = /^\s*!\s*(subscribe|unsubscribe|list_subscriptions)\s+([\w\.]+)\s+(.*)/i.match(msg.body.join)
+        if match
+          {match[1].downcase, match[2].downcase, match[3]}
+        else
+          {nil, nil, nil}
+        end
       end
 
       def handle(msg)
-        cmd = command(msg)
+        cmd, subscription, arg = command(msg)
 
-        reply = ""
-        if Data.has_key?(cmd)
-          reply = Data[cmd]
-        elsif asset_exists?(cmd) && asset_path && cmd
-          reply = File.read(File.expand_path(File.join(asset_path.as(String), cmd))) if asset_path
-        end
-        msg.reply(body: reply) if reply
+        reply = case cmd
+                when "subscribe"          then handle_subscribe(subscription, arg)
+                when "unsubscribe"        then handle_unsubscribe(subscription, arg)
+                when "list_subscriptions" then handle_list_subscriptions
+                else
+                  "I did not understand that command. I can !subscribe, !unsubscribe, or !list_subscriptions."
+                end
+
+        msg.reply(body: reply.to_s)
+      end
+
+      def handle_subscribe(subscription, arg)
+      end
+
+      def handle_unsubscribe(subscription, arg)
+      end
+
+      def handle_list_subscriptions
+        subscriptions = @subscriptions.list
+        subscriptions.data.map do |sub|
+          <<-ESUB
+          type: #{sub.type}
+          id: #{sub.id}
+          created at #{sub.created_at}
+          status: #{sub.status}
+          condition: #{sub.condition.inspect}
+          ESUB
+        end.join("\n")
       end
     end
   end
 
+  class Config
+    @[YAML::Field(key: "twitch_event_sub", emit_null: true)]
+    getter static : Handlers::TwitchEventSub::Config?
+  end
 end

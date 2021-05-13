@@ -1,8 +1,6 @@
-require "./pipeline"
-
 module Evita
   class Adapter
-    @pipeline : Pipeline(Message) = Pipeline(Message).new(100)
+    @pipeline : Bus::Pipeline(Bus::Message) = Bus::Pipeline(Bus::Message).new(100)
     @output_proc : Fiber?
     @input_proc : Fiber?
     # @bot : Robot

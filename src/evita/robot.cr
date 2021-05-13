@@ -1,6 +1,5 @@
 require "db"
 require "sqlite3"
-require "./bus"
 require "./command_line"
 require "./database"
 
@@ -28,11 +27,10 @@ module Evita
 
     def initialize
       @config = @@config
-      puts @config.inspect
       Robot.set_config(@config)
       @db = Database.setup(@config)
       @bus = Bus.new
-      @handlers = Array(Handler).new
+      @handlers = Array(Bus::Handler).new
       @adapters = Array(Adapter).new
       Evita.bot = self
     end
@@ -41,7 +39,7 @@ module Evita
       # TODO: Placeholder, but should probably do something someday.
     end
 
-    def send(message : Message)
+    def send(message : Bus::Message)
       @bus.send(message)
     end
 
@@ -62,7 +60,7 @@ module Evita
       )
     end
 
-    def register_handler(handler : Handler) : Pipeline(Message)
+    def register_handler(handler : Bus::Handler) : Bus::Pipeline(Bus::Message)
       pipeline = @bus.subscribe(
         tags: ["handler", "handler:#{handler.class.name}"]
       )
@@ -71,7 +69,7 @@ module Evita
       pipeline
     end
 
-    def register_adapter(adapter : Adapter) : Pipeline(Message)
+    def register_adapter(adapter : Adapter) : Bus::Pipeline(Bus::Message)
       pipeline = @bus.subscribe(
         tags: ["adapter", "adapter:#{adapter.class.name}"]
       )

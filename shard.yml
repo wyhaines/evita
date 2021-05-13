@@ -30,6 +30,11 @@ dependencies:
   twitch_event_sub:
     github: wyhaines/TwitchEventSub.cr
     branch: main
+  bus:
+    github: wyhaines/bus.cr
+  simple_irc:
+    github: wyhaines/simple_irc.cr
+    branch: main
 
 development_dependencies:
   ameba:

@@ -10,7 +10,7 @@ module Evita
     # the message.
     # If it does not have a match, though, it will decline to
     # handle the message at all.
-    class Static < Handler
+    class Static < Evita::Handler
       class Config
         include YAML::Serializable
         include YAML::Serializable::Unmapped

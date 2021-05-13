@@ -1,11 +1,8 @@
 module Evita
   module Handlers
-    class Echo < Handler
-      def evaluate(msg)
-      end
-
+    class Echo < Evita::Handler
       def handle(msg)
-        msg.reply(body: "#{@handle_counter}: #{msg.body.join}")
+        msg.reply(body: "#{@handle_counter.get}: #{msg.body.join}")
       end
     end
   end

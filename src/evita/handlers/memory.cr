@@ -24,7 +24,7 @@ module Evita
   module Handlers
     # rubocop: disable Metrics/ClassLength
     # The memory handler stores information in redis for later recall.
-    class Memory < Handler
+    class Memory < Evita::Handler
       # remember [that] TERM is DEFINITION -> store
       # store TERM as DEFINITION -> store
       # add DEFINTION to TERM -> store

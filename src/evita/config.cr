@@ -17,5 +17,7 @@ module Evita
     property database : String = "sqlite3://./evita.db"
 
     property mode : String = "test"
+
+    property extra : Array(String) = [] of String
   end
 end

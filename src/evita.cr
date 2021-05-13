@@ -1,32 +1,18 @@
+require "bus"
 require "./evita/*"
+require "./evita/handlers/*"
 require "benchmark"
-require "new_relic"
 
 bot = Evita::Robot.new
 
-class NRApp
-  @@app : NewRelic? = nil
-
-  def self.set(app)
-    @@app = app
-  end
-
-  def self.app
-    @@app.not_nil!
-  end
-end
-
 if bot.config.mode == "run"
-  # NewRelic.new() do |app|
-  #   NRApp.set(app)
-
   endc = Channel(Nil).new
 
   # shell_adapter = Evita::Adapters::Shell.new(bot)
   irc_adapter = Evita::Adapters::Twitch.new(bot)
   echo_handler = Evita::Handlers::GPT3.new(bot)
   static_handler = Evita::Handlers::Static.new(bot)
-  twitch_handler = Evita::Handlers::Twitch.new(bot)
+  twitch_handler = Evita::Handlers::TwitchEventSub.new(bot)
 
   # shell_adapter.run
   irc_adapter.run

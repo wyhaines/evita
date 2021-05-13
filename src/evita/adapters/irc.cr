@@ -20,7 +20,7 @@ module Evita
       end
 
       def origin
-        @pipeline.is_a?(Pipeline) ? @pipeline.origin : nil
+        @pipeline.is_a?(Bus::Pipeline) ? @pipeline.origin : nil
       end
 
       def service
