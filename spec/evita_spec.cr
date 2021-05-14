@@ -33,13 +33,23 @@ describe Evita do
 
     # The next test is intended to just ensure that the message bus
     # keeps up, and that delivery happens as it should, in the order
-    # that it should.
+    # that it should. If this blows up, it will timeout in 20 seconds.
     spawn(name: "hammer test") do
-      100000.times {input_stepper.send "hammer"}
+      100000.times { input_stepper.send "hammer" }
     end
 
     last_msg = ""
-    100000.times {last_msg = channel_adapter.output.receive}
+
+    timeout(
+      seconds: 20, 
+      raise_on_exception: false
+      ) do
+      100000.times do
+        last_msg = channel_adapter.output.receive
+        sleep 0
+      end
+    end
+
     last_msg.should eq "100002: hammer"
   end
 end
