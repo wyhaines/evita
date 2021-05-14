@@ -1,14 +1,17 @@
 require "./spec_helper"
 
 describe Evita do
-  it "can round-trip from adapter <-> handler" do
+  it "can round-trip from adapter <-> handler using the echo handler" do
     ARGV.replace(["test", "-n", "test bot"])
     bot = Evita::Robot.new
-    channel_adapter = Evita::Adapters::Channel.new(bot)
+    channel_adapter = Evita::Adapters::Channel.new(
+      bot: bot,
+      input: Bus::Pipeline(String).new(1000),
+      output: Bus::Pipeline(String).new(1000)
+    )
     echo_handler = Evita::Handlers::Echo.new(bot)
 
-    input_stepper = Bus::Pipeline(String?).new
-    # output_stepper = Bus::Pipeline(String?).new
+    input_stepper = Bus::Pipeline(String?).new(1000)
 
     channel_adapter.run
     echo_handler.run
@@ -22,17 +25,21 @@ describe Evita do
       end
     end
 
-    # spawn(name: "Output stepper motor") do
-    #   while output_stepper.receive do
-    #     str = channel_adapter.output.receive
-
-    #   end
-    # end
-
     input_stepper.send "test"
     channel_adapter.output.receive.should eq "1: test"
 
     input_stepper.send "test again"
     channel_adapter.output.receive.should eq "2: test again"
+
+    # The next test is intended to just ensure that the message bus
+    # keeps up, and that delivery happens as it should, in the order
+    # that it should.
+    spawn(name: "hammer test") do
+      100000.times {input_stepper.send "hammer"}
+    end
+
+    last_msg = ""
+    100000.times {last_msg = channel_adapter.output.receive}
+    last_msg.should eq "100002: hammer"
   end
 end
