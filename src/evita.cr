@@ -5,6 +5,8 @@ require "benchmark"
 
 bot = Evita::Robot.new
 
+puts "Running with mode of #{bot.config.mode}"
+
 if bot.config.mode == "run"
   endc = Channel(Nil).new
 
