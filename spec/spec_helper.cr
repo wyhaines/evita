@@ -1,5 +1,5 @@
 require "spec"
 require "../src/evita"
-require "../src/timeout"
+require "timeout"
 
 SpecNotes = Hash(String, String).new

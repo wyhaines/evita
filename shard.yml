@@ -32,6 +32,8 @@ dependencies:
     branch: main
   bus:
     github: wyhaines/bus.cr
+  timeout:
+    github: wyhaines/timeout.cr
   simple_irc:
     github: wyhaines/simple_irc.cr
     branch: main

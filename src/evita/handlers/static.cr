@@ -19,6 +19,31 @@ module Evita
         getter asset_path : String? = nil
       end
 
+      # This records the vital state information of the asset index file.
+
+      record FileState, path : Path?, last_modified : Time?, hash : String? do
+        def modified?
+        end
+
+        def new_state
+          if File.exists?(path)
+            info = File.info(path)
+            hash = Digest::SHA256.new.file(path).hexstring
+            FileState.new(
+              path: path,
+              last_modified: info.modification_time,
+              hash: hash
+            )
+          else
+            FileState.new
+          end
+        rescue e : Exception
+          return FileState.new
+        end
+      end
+
+      AssetState = FileState.new
+
       # I don't think that I actually want to take this approach of compiling things in directly.
       #
       # macro from_proc(path)
@@ -35,14 +60,20 @@ module Evita
       #   puts path
       # end
 
-      Data = {
-        "marco"       => "polo",
-        "ping"        => "pong",
-        "futurestack" => "Level up your observability game at FutureStack, a free virtual event May 25-27! https://bit.ly/futurestack-twitch",
-      }
+      # Data = {
+      #   "marco"       => "polo",
+      #   "ping"        => "pong",
+      #   "futurestack" => "Level up your observability game at FutureStack, a free virtual event May 25-27! https://bit.ly/futurestack-twitch",
+      # }
+
+
 
       def asset_path
-        Robot.config.static && Robot.config.static.not_nil!.asset_path
+        if AssetState.path
+          AssetState.path
+        else
+          AssetState.path = Robot.config.static.try(&.asset_path)
+        end
       end
 
       def evaluate(msg)
@@ -72,7 +103,7 @@ module Evita
 
       def can_handle?(msg)
         cmd = command(msg)
-        cmd && (Data.has_key?(cmd) || asset_exists?(cmd))
+        
       end
 
       def asset_exists?(cmd)
