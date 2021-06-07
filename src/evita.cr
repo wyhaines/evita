@@ -1,7 +1,14 @@
+require "send"
 require "bus"
 require "./evita/*"
 require "./evita/handlers/*"
 require "benchmark"
+
+module Evita
+  class Config
+    include Send
+  end
+end
 
 bot = Evita::Robot.new
 

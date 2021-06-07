@@ -22,7 +22,9 @@ module Evita
         include YAML::Serializable::Unmapped
 
         @[YAML::Field(key: "asset_path", emit_null: true)]
-        getter asset_path : String? = nil
+        property asset_path : String? = nil
+
+        include Send
       end
 
       def initialize(@bot : Robot)
@@ -117,7 +119,7 @@ module Evita
   end
 
   class Config
-    @[YAML::Field(key: "twitch_event_sub", emit_null: true)]
-    getter static : Handlers::TwitchEventSub::Config?
+    @[YAML::Field(emit_null: true)]
+    getter twitch_event_sub : Handlers::TwitchEventSub::Config?
   end
 end

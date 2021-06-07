@@ -37,6 +37,10 @@ dependencies:
   simple_irc:
     github: wyhaines/simple_irc.cr
     branch: main
+#  crustache:
+#    github: MakeNowJust/crustache
+  send:
+    github: wyhaines/Send.cr
 
 development_dependencies:
   ameba:

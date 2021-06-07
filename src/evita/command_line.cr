@@ -32,6 +32,12 @@ module Evita
           opts.on("-d", "--database [CONNECT_STRING]", "The connection string to use to connect to the robot's database.") do |database|
             set_database(config, database)
           end
+          opts.on("-k", "--key [KEYa:KEYb:VAL]", "Specify configuration via key(s) and the value, separated by colongs.") do |cfgstr|
+            parts = cfgstr.split(":")
+            keys = parts[0..-2]
+            val = parts[-1]
+            set_config_value(config, keys, val)
+          end
           opts.on("-h", "--help", "Show this help") do
             puts get_help(opts)
             exit
@@ -76,11 +82,28 @@ module Evita
     end
 
     def self.set_name(config, name)
-      config.name = name
+      config.name = name 
     end
 
     def self.set_database(config, database)
       config.database = database
+    end
+
+    def self.set_config_value(config : Evita::Config, keys : Array(String), value : String)
+      if keys.size > 1
+        final = keys[0..-2].reduce(config.as(Evita::Config)) do |a,v|
+          if a.responds_to?(:__send__)
+            a.__send__(v)
+          else
+            return nil
+          end 
+        end
+        if final.responds_to?(:__send__)
+          final.__send__?("#{keys.last}=", value)
+        end
+      else
+        config.__send__?("#{keys.first}=", value)
+      end
     end
 
     def self.get_version
